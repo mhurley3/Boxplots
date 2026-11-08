@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Five-Number Summary, Boxplots & Frequency Tables Tool</title>
+    <style>
+        /* CSS Reset & Adaptive Design Tokens */
+        :root {
+            --bg-main: #f8fafc;
+            --surface-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #334155;
+            --primary-color: #1e40af;
+            --primary-hover: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent-color: #047857;
+            --accent-light: #ecfdf5;
+            --border-color: #94a3b8;
+            --focus-outline: #2563eb;
+            --highlight-bg: #fef08a;
+            --highlight-border: #ca8a04;
+            --highlight-text: #854d0e;
+            --error-color: #991b1b;
+            --error-bg: #fef2f2;
+            --outlier-color: #dc2626;
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        }
+
+        /* High Contrast Dark Mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #0f172a;
+                --surface-bg: #1e293b;
+                --text-main: #f8fafc;
+                --text-muted: #e2e8f0;
+                --primary-color: #60a5fa;
+                --primary-hover: #93c5fd;
+                --primary-light: #1e3a8a;
+                --accent-color: #34d399;
+                --accent-light: #064e3b;
+                --border-color: #64748b;
+                --focus-outline: #93c5fd;
+                --highlight-bg: #854d0e;
+                --highlight-border: #facc15;
+                --highlight-text: #fef08a;
+                --error-color: #fca5a5;
+                --error-bg: #450a0a;
+                --outlier-color: #f87171;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 1.5rem;
+            max-width: 1250px;
+            margin: 0 auto;
+        }
+
+        /* WCAG Visible Focus Indicators */
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 3px solid var(--focus-outline);
+            outline-offset: 3px;
+            border-radius: 4px;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        p.intro {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 900px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .help-text {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--surface-bg);
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button, .btn-secondary {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            border: 2px solid var(--primary-color);
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            margin-top: 0.75rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-hover);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        .alert-error {
+            background-color: var(--error-bg);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+
+        /* Summary Metric Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-card {
+            background-color: var(--primary-light);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 0.85rem;
+            text-align: center;
+        }
+
+        .summary-card .title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-transform: uppercase;
+        }
+
+        .summary-card .value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin-top: 0.25rem;
+        }
+
+        /* Collapsible Raw Data Viewer */
+        .raw-data-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.95rem;
+            word-break: break-word;
+        }
+
+        /* Canvas Boxplot Container */
+        .chart-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--surface-bg);
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Five-Number Summary & Boxplot Visualizer</h1>
+        <p class="intro">Generate continuous or discrete data or upload your own dataset. View the raw values, calculate the five-number summary, and visualize standard or modified boxplots with collision-free labels.</p>
+    </header>
+
+    <main class="layout-grid">
+        <!-- Section 1: Data Source & Settings -->
+        <section class="card" aria-labelledby="heading-data-input">
+            <h2 id="heading-data-input">1. Data Selection & Generation</h2>
+
+            <div class="form-group">
+                <label for="data-source-select">Input Method</label>
+                <select id="data-source-select">
+                    <option value="generator">Generate Random Data</option>
+                    <option value="manual">Type or Paste Raw Values</option>
+                    <option value="file">Upload File (.txt or .csv)</option>
+                </select>
+            </div>
+
+            <!-- Panel: Random Generator -->
+            <div id="panel-generator">
+                <div class="grid-2col">
+                    <div class="form-group">
+                        <label for="data-type-select">Data Type</label>
+                        <select id="data-type-select">
+                            <option value="continuous" selected>Continuous (Decimals)</option>
+                            <option value="discrete">Discrete (Integers)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gen-count">Sample Size (n)</label>
+                        <input type="number" id="gen-count" min="5" max="300" value="40">
+                    </div>
+                </div>
+
+                <div class="grid-2col">
+                    <div class="form-group">
+                        <label for="gen-min">Minimum Range</label>
+                        <input type="number" id="gen-min" step="any" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="gen-max">Maximum Range</label>
+                        <input type="number" id="gen-max" step="any" value="100">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="gen-dist">Distribution Shape</label>
+                    <select id="gen-dist">
+                        <option value="symmetric">Normally Distributed (Symmetric / Bell-shaped)</option>
+                        <option value="uniform">Uniform Distribution</option>
+                        <option value="skewed-right">Skewed Right</option>
+                        <option value="skewed-left">Skewed Left</option>
+                        <option value="outliers" selected>With Outliers (For Testing Outlier Boundaries)</option>
+                    </select>
+                </div>
+
+                <button type="button" id="btn-generate">Generate Sample Data</button>
+            </div>
+
+            <!-- Panel: Manual Text -->
+            <div id="panel-manual" style="display:none;">
+                <div class="form-group">
+                    <label for="manual-data-input">Enter Numeric Values</label>
+                    <div class="help-text">Separate numbers with commas, spaces, or newlines.</div>
+                    <textarea id="manual-data-input" placeholder="e.g., 12.5, 15, 18.2, 19, 21, 23, 24, 25, 27, 48.5"></textarea>
+                </div>
+                <button type="button" id="btn-parse-manual">Process Manual Data</button>
+            </div>
+
+            <!-- Panel: File Upload -->
+            <div id="panel-file" style="display:none;">
+                <div class="form-group">
+                    <label for="file-input">Upload Text or CSV File</label>
+                    <div class="help-text">Select a plain text (.txt) or CSV (.csv) numerical dataset.</div>
+                    <input type="file" id="file-input" accept=".csv, .txt">
+                </div>
+            </div>
+
+            <!-- Toggleable Data Display -->
+            <button type="button" id="btn-toggle-raw" class="btn-secondary" aria-expanded="false" aria-controls="raw-data-container">
+                Show Dataset Values (n = <span id="raw-count">0</span>)
+            </button>
+            <div id="raw-data-container" style="display: none;">
+                <div class="raw-data-box" id="raw-data-display" tabindex="0" aria-label="Raw Dataset Values"></div>
+            </div>
+
+            <!-- Live Announcements & Error Banner -->
+            <div id="live-announcer" class="sr-only" aria-live="polite"></div>
+            <div id="error-message" class="alert alert-error" style="display:none;" role="alert"></div>
+        </section>
+
+        <!-- Section 2: Five-Number Summary Metrics -->
+        <section class="card" aria-labelledby="heading-summary">
+            <h2 id="heading-summary">2. Five-Number Summary</h2>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="title">Minimum (Min)</div>
+                    <div class="value" id="val-min">-</div>
+                </div>
+                <div class="summary-card">
+                    <div class="title">Quartile 1 (Q1)</div>
+                    <div class="value" id="val-q1">-</div>
+                </div>
+                <div class="summary-card">
+                    <div class="title">Median (Q2)</div>
+                    <div class="value" id="val-median">-</div>
+                </div>
+                <div class="summary-card">
+                    <div class="title">Quartile 3 (Q3)</div>
+                    <div class="value" id="val-q3">-</div>
+                </div>
+                <div class="summary-card">
+                    <div class="title">Maximum (Max)</div>
+                    <div class="value" id="val-max">-</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Interactive Boxplot Visualization -->
+        <section class="card" aria-labelledby="heading-boxplot">
+            <h2 id="heading-boxplot">3. Boxplot Visualization</h2>
+
+            <div class="grid-2col" style="margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label for="boxplot-type-select">Boxplot Type</label>
+                    <select id="boxplot-type-select">
+                        <option value="modified" selected>Modified Boxplot (Outliers & Non-Outlier Whiskers)</option>
+                        <option value="standard">Standard Boxplot (Whiskers to Absolute Min & Max)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="boxplot-orient-select">Orientation</label>
+                    <select id="boxplot-orient-select">
+                        <option value="horizontal" selected>Horizontal</option>
+                        <option value="vertical">Vertical</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="chart-container" id="chart-wrapper">
+                <canvas id="boxplot-canvas" width="900" height="420" aria-label="Interactive Canvas for Boxplot Data Visualization"></canvas>
+            </div>
+            <div id="boxplot-screenreader-desc" class="sr-only" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Introductory Statistics Educational Application | Designed to meet WCAG 2.2 AA Standards.</p>
+    </footer>
+
+    <script>
+        // State variables
+        let rawData = [];
+        let sortedData = [];
+        let summaryStats = {};
+
+        // DOM Elements
+        const elements = {
+            dataSourceSelect: document.getElementById('data-source-select'),
+            dataTypeSelect: document.getElementById('data-type-select'),
+            panelGenerator: document.getElementById('panel-generator'),
+            panelManual: document.getElementById('panel-manual'),
+            panelFile: document.getElementById('panel-file'),
+            genCount: document.getElementById('gen-count'),
+            genMin: document.getElementById('gen-min'),
+            genMax: document.getElementById('gen-max'),
+            genDist: document.getElementById('gen-dist'),
+            btnGenerate: document.getElementById('btn-generate'),
+            manualDataInput: document.getElementById('manual-data-input'),
+            btnParseManual: document.getElementById('btn-parse-manual'),
+            fileInput: document.getElementById('file-input'),
+            btnToggleRaw: document.getElementById('btn-toggle-raw'),
+            rawCount: document.getElementById('raw-count'),
+            rawDataContainer: document.getElementById('raw-data-container'),
+            rawDataDisplay: document.getElementById('raw-data-display'),
+            valMin: document.getElementById('val-min'),
+            valQ1: document.getElementById('val-q1'),
+            valMedian: document.getElementById('val-median'),
+            valQ3: document.getElementById('val-q3'),
+            valMax: document.getElementById('val-max'),
+            boxplotTypeSelect: document.getElementById('boxplot-type-select'),
+            boxplotOrientSelect: document.getElementById('boxplot-orient-select'),
+            boxplotCanvas: document.getElementById('boxplot-canvas'),
+            boxplotSrDesc: document.getElementById('boxplot-screenreader-desc'),
+            errorMessage: document.getElementById('error-message'),
+            liveAnnouncer: document.getElementById('live-announcer')
+        };
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            initEvents();
+            generateData();
+        });
+
+        function initEvents() {
+            elements.dataSourceSelect.addEventListener('change', (e) => {
+                const method = e.target.value;
+                elements.panelGenerator.style.display = method === 'generator' ? 'block' : 'none';
+                elements.panelManual.style.display = method === 'manual' ? 'block' : 'none';
+                elements.panelFile.style.display = method === 'file' ? 'block' : 'none';
+                if (method === 'generator') generateData();
+            });
+
+            elements.btnGenerate.addEventListener('click', generateData);
+            elements.btnParseManual.addEventListener('click', parseManualInput);
+            elements.fileInput.addEventListener('change', handleFileUpload);
+
+            elements.btnToggleRaw.addEventListener('click', () => {
+                const isHidden = elements.rawDataContainer.style.display === 'none';
+                elements.rawDataContainer.style.display = isHidden ? 'block' : 'none';
+                elements.btnToggleRaw.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+                elements.btnToggleRaw.textContent = `${isHidden ? 'Hide' : 'Show'} Dataset Values (n = ${rawData.length})`;
+            });
+
+            elements.boxplotTypeSelect.addEventListener('change', drawBoxplot);
+            elements.boxplotOrientSelect.addEventListener('change', drawBoxplot);
+
+            window.addEventListener('resize', drawBoxplot);
+        }
+
+        function announce(text) {
+            elements.liveAnnouncer.textContent = text;
+        }
+
+        function showError(msg) {
+            if (msg) {
+                elements.errorMessage.textContent = msg;
+                elements.errorMessage.style.display = 'block';
+                announce("Error: " + msg);
+            } else {
+                elements.errorMessage.textContent = '';
+                elements.errorMessage.style.display = 'none';
+            }
+        }
+
+        // Generate Random Sample Data
+        function generateData() {
+            showError(null);
+            const isContinuous = elements.dataTypeSelect.value === 'continuous';
+            const count = parseInt(elements.genCount.value, 10);
+            const min = parseFloat(elements.genMin.value);
+            const max = parseFloat(elements.genMax.value);
+            const dist = elements.genDist.value;
+
+            if (isNaN(count) || count < 5 || count > 300) {
+                showError("Sample size (n) must be between 5 and 300.");
+                return;
+            }
+            if (isNaN(min) || isNaN(max) || min >= max) {
+                showError("Minimum range value must be strictly less than maximum value.");
+                return;
+            }
+
+            rawData = [];
+            for (let i = 0; i < count; i++) {
+                let u = Math.random();
+                let val;
+
+                if (dist === 'symmetric') {
+                    let u2 = Math.random();
+                    let norm = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * u2);
+                    val = (min + max) / 2 + norm * ((max - min) / 6);
+                } else if (dist === 'uniform') {
+                    val = min + u * (max - min);
+                } else if (dist === 'skewed-right') {
+                    val = min + Math.pow(u, 2.5) * (max - min);
+                } else if (dist === 'skewed-left') {
+                    val = min + (1 - Math.pow(u, 2.5)) * (max - min);
+                } else {
+                    val = min + u * (max - min);
+                }
+
+                val = Math.max(min, Math.min(max, val));
+                if (!isContinuous) val = Math.round(val);
+                else val = Math.round(val * 100) / 100;
+
+                rawData.push(val);
+            }
+
+            // Inject explicit high/low outliers if 'outliers' distribution is chosen
+            if (dist === 'outliers' && count >= 10) {
+                const range = max - min;
+                rawData[0] = Math.round((max + range * 0.4) * 100) / 100; // Upper outlier
+                rawData[1] = Math.round((min - range * 0.3) * 100) / 100; // Lower outlier
+            }
+
+            processData();
+            announce(`Generated ${rawData.length} sample data values.`);
+        }
+
+        function parseManualInput() {
+            showError(null);
+            const text = elements.manualDataInput.value;
+            const tokens = text.split(/[\s,]+/);
+            const parsed = tokens.map(t => parseFloat(t)).filter(n => !isNaN(n) && isFinite(n));
+
+            if (parsed.length < 3) {
+                showError("Please enter at least 3 valid numerical values.");
+                return;
+            }
+            rawData = parsed;
+            processData();
+            announce(`Processed ${rawData.length} values.`);
+        }
+
+        function handleFileUpload(e) {
+            showError(null);
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const text = evt.target.result;
+                const tokens = text.split(/[\s,]+/);
+                const parsed = tokens.map(t => parseFloat(t)).filter(n => !isNaN(n) && isFinite(n));
+
+                if (parsed.length < 3) {
+                    showError("File must contain at least 3 numerical values.");
+                    return;
+                }
+                rawData = parsed;
+                processData();
+                announce(`Loaded ${rawData.length} values from file.`);
+            };
+            reader.readAsText(file);
+        }
+
+        // Process Data & Five-Number Summary
+        function processData() {
+            sortedData = [...rawData].sort((a, b) => a - b);
+            
+            // Update raw data box
+            elements.rawCount.textContent = rawData.length;
+            const isHidden = elements.rawDataContainer.style.display === 'none';
+            elements.btnToggleRaw.textContent = `${isHidden ? 'Show' : 'Hide'} Dataset Values (n = ${rawData.length})`;
+            elements.rawDataDisplay.textContent = sortedData.join(', ');
+
+            calculateFiveNumberSummary();
+            drawBoxplot();
+        }
+
+        function calculateQuartile(arr, q) {
+            const pos = (arr.length - 1) * q;
+            const base = Math.floor(pos);
+            const rest = pos - base;
+            if (arr[base + 1] !== undefined) {
+                return arr[base] + rest * (arr[base + 1] - arr[base]);
+            } else {
+                return arr[base];
+            }
+        }
+
+        function calculateFiveNumberSummary() {
+            const min = sortedData[0];
+            const max = sortedData[sortedData.length - 1];
+            const median = calculateQuartile(sortedData, 0.5);
+            const q1 = calculateQuartile(sortedData, 0.25);
+            const q3 = calculateQuartile(sortedData, 0.75);
+            const iqr = q3 - q1;
+
+            const lowerFence = q1 - 1.5 * iqr;
+            const upperFence = q3 + 1.5 * iqr;
+
+            // Find Non-Outlier Limits
+            const nonOutliers = sortedData.filter(x => x >= lowerFence && x <= upperFence);
+            const outliers = sortedData.filter(x => x < lowerFence || x > upperFence);
+
+            const minNonOutlier = nonOutliers.length > 0 ? nonOutliers[0] : min;
+            const maxNonOutlier = nonOutliers.length > 0 ? nonOutliers[nonOutliers.length - 1] : max;
+
+            summaryStats = {
+                min: Math.round(min * 1000) / 1000,
+                q1: Math.round(q1 * 1000) / 1000,
+                median: Math.round(median * 1000) / 1000,
+                q3: Math.round(q3 * 1000) / 1000,
+                max: Math.round(max * 1000) / 1000,
+                iqr: Math.round(iqr * 1000) / 1000,
+                lowerFence: Math.round(lowerFence * 1000) / 1000,
+                upperFence: Math.round(upperFence * 1000) / 1000,
+                minNonOutlier: Math.round(minNonOutlier * 1000) / 1000,
+                maxNonOutlier: Math.round(maxNonOutlier * 1000) / 1000,
+                outliers: outliers.map(o => Math.round(o * 1000) / 1000)
+            };
+
+            // Display Values
+            elements.valMin.textContent = summaryStats.min;
+            elements.valQ1.textContent = summaryStats.q1;
+            elements.valMedian.textContent = summaryStats.median;
+            elements.valQ3.textContent = summaryStats.q3;
+            elements.valMax.textContent = summaryStats.max;
+        }
+
+        // Draw Interactive Boxplot Canvas
+        function drawBoxplot() {
+            const canvas = elements.boxplotCanvas;
+            const ctx = canvas.getContext('2d');
+            const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            const isModified = elements.boxplotTypeSelect.value === 'modified';
+            const isHorizontal = elements.boxplotOrientSelect.value === 'horizontal';
+
+            // Colors
+            const colorText = isDark ? '#f8fafc' : '#0f172a';
+            const colorPrimary = isDark ? '#60a5fa' : '#1e40af';
+            const colorBoxBg = isDark ? '#1e3a8a' : '#eff6ff';
+            const colorOutlier = isDark ? '#f87171' : '#dc2626';
+            const colorFence = isDark ? '#facc15' : '#ca8a04';
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!sortedData || sortedData.length === 0) return;
+
+            // Determine data scale bounds
+            let dataMin = isModified ? Math.min(summaryStats.min, summaryStats.lowerFence) : summaryStats.min;
+            let dataMax = isModified ? Math.max(summaryStats.max, summaryStats.upperFence) : summaryStats.max;
+
+            const paddingRatio = 0.08;
+            const span = (dataMax - dataMin) || 1;
+            const scaleMin = dataMin - span * paddingRatio;
+            const scaleMax = dataMax + span * paddingRatio;
+
+            if (isHorizontal) {
+                drawHorizontalBoxplot(ctx, canvas, scaleMin, scaleMax, isModified, {
+                    colorText, colorPrimary, colorBoxBg, colorOutlier, colorFence
+                });
+            } else {
+                drawVerticalBoxplot(ctx, canvas, scaleMin, scaleMax, isModified, {
+                    colorText, colorPrimary, colorBoxBg, colorOutlier, colorFence
+                });
+            }
+
+            // Update Screen Reader Description
+            elements.boxplotSrDesc.textContent = `
+                Boxplot summary (${isModified ? 'Modified' : 'Standard'}, ${isHorizontal ? 'Horizontal' : 'Vertical'}): 
+                Minimum ${summaryStats.min}, Quartile 1 ${summaryStats.q1}, Median ${summaryStats.median}, Quartile 3 ${summaryStats.q3}, Maximum ${summaryStats.max}.
+                ${isModified ? `Lower whisker at ${summaryStats.minNonOutlier}, upper whisker at ${summaryStats.maxNonOutlier}. Outliers detected: ${summaryStats.outliers.length}.` : ''}
+            `;
+        }
+
+        function drawHorizontalBoxplot(ctx, canvas, scaleMin, scaleMax, isModified, colors) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const margin = { left: 70, right: 70, top: 65, bottom: 75 };
+
+            const plotWidth = w - margin.left - margin.right;
+            const centerY = (h - margin.top - margin.bottom) / 2 + margin.top;
+            const boxHeight = 70;
+
+            const mapX = (val) => margin.left + ((val - scaleMin) / (scaleMax - scaleMin)) * plotWidth;
+
+            // Draw Axis & Ticks
+            const axisY = h - margin.bottom + 20;
+            ctx.strokeStyle = colors.colorText;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, axisY);
+            ctx.lineTo(w - margin.right, axisY);
+            ctx.stroke();
+
+            // Ticks
+            const numTicks = 8;
+            ctx.font = '12px system-ui';
+            ctx.fillStyle = colors.colorText;
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= numTicks; i++) {
+                const tickVal = scaleMin + (i / numTicks) * (scaleMax - scaleMin);
+                const x = mapX(tickVal);
+                ctx.beginPath();
+                ctx.moveTo(x, axisY);
+                ctx.lineTo(x, axisY + 6);
+                ctx.stroke();
+                ctx.fillText(tickVal.toFixed(1), x, axisY + 22);
+            }
+
+            // Map Key Positions
+            const xQ1 = mapX(summaryStats.q1);
+            const xMedian = mapX(summaryStats.median);
+            const xQ3 = mapX(summaryStats.q3);
+
+            const xWhiskerLeft = mapX(isModified ? summaryStats.minNonOutlier : summaryStats.min);
+            const xWhiskerRight = mapX(isModified ? summaryStats.maxNonOutlier : summaryStats.max);
+
+            // Draw Fences on Modified Boxplot (Boundary between outliers and non-outliers)
+            if (isModified) {
+                const xFenceLow = mapX(summaryStats.lowerFence);
+                const xFenceHigh = mapX(summaryStats.upperFence);
+
+                ctx.strokeStyle = colors.colorFence;
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+
+                // Lower Fence Line
+                ctx.beginPath();
+                ctx.moveTo(xFenceLow, centerY - boxHeight / 1.2);
+                ctx.lineTo(xFenceLow, centerY + boxHeight / 1.2);
+                ctx.stroke();
+
+                // Upper Fence Line
+                ctx.beginPath();
+                ctx.moveTo(xFenceHigh, centerY - boxHeight / 1.2);
+                ctx.lineTo(xFenceHigh, centerY + boxHeight / 1.2);
+                ctx.stroke();
+
+                ctx.setLineDash([]); // Reset line dash
+
+                // Fence Text Labels (Clean concise boundary labels)
+                ctx.fillStyle = colors.colorFence;
+                ctx.font = 'bold 11px system-ui';
+                ctx.fillText(`Lower Bound (${summaryStats.lowerFence})`, xFenceLow, centerY - boxHeight / 1.2 - 8);
+                ctx.fillText(`Upper Bound (${summaryStats.upperFence})`, xFenceHigh, centerY - boxHeight / 1.2 - 8);
+            }
+
+            // Draw Whiskers
+            ctx.strokeStyle = colors.colorPrimary;
+            ctx.lineWidth = 2;
+
+            // Left Whisker Line
+            ctx.beginPath();
+            ctx.moveTo(xWhiskerLeft, centerY);
+            ctx.lineTo(xQ1, centerY);
+            ctx.stroke();
+
+            // Right Whisker Line
+            ctx.beginPath();
+            ctx.moveTo(xQ3, centerY);
+            ctx.lineTo(xWhiskerRight, centerY);
+            ctx.stroke();
+
+            // Left Cap
+            ctx.beginPath();
+            ctx.moveTo(xWhiskerLeft, centerY - boxHeight / 4);
+            ctx.lineTo(xWhiskerLeft, centerY + boxHeight / 4);
+            ctx.stroke();
+
+            // Right Cap
+            ctx.beginPath();
+            ctx.moveTo(xWhiskerRight, centerY - boxHeight / 4);
+            ctx.lineTo(xWhiskerRight, centerY + boxHeight / 4);
+            ctx.stroke();
+
+            // Draw Box (Q1 to Q3)
+            ctx.fillStyle = colors.colorBoxBg;
+            ctx.fillRect(xQ1, centerY - boxHeight / 2, Math.max(1, xQ3 - xQ1), boxHeight);
+
+            ctx.strokeStyle = colors.colorPrimary;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(xQ1, centerY - boxHeight / 2, Math.max(1, xQ3 - xQ1), boxHeight);
+
+            // Draw Median Line (Q2)
+            ctx.strokeStyle = colors.colorPrimary;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(xMedian, centerY - boxHeight / 2);
+            ctx.lineTo(xMedian, centerY + boxHeight / 2);
+            ctx.stroke();
+
+            // Draw Outliers
+            if (isModified && summaryStats.outliers.length > 0) {
+                ctx.fillStyle = colors.colorOutlier;
+                ctx.strokeStyle = colors.colorText;
+                ctx.lineWidth = 1.5;
+                summaryStats.outliers.forEach(outVal => {
+                    const ox = mapX(outVal);
+                    ctx.beginPath();
+                    ctx.arc(ox, centerY, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+
+            // Annotate 5-Number Summary Values with Anti-Overlap Logic
+            const labels = [
+                { text: `Min: ${summaryStats.min}`, x: mapX(summaryStats.min), y: centerY + boxHeight / 2 + 22, align: 'center' },
+                { text: `Q1: ${summaryStats.q1}`, x: xQ1, y: centerY + boxHeight / 2 + 22, align: 'center' },
+                { text: `Med: ${summaryStats.median}`, x: xMedian, y: centerY - boxHeight / 2 - 12, align: 'center' },
+                { text: `Q3: ${summaryStats.q3}`, x: xQ3, y: centerY + boxHeight / 2 + 22, align: 'center' },
+                { text: `Max: ${summaryStats.max}`, x: mapX(summaryStats.max), y: centerY + boxHeight / 2 + 22, align: 'center' }
+            ];
+
+            if (isModified && (summaryStats.minNonOutlier !== summaryStats.min)) {
+                labels.push({ text: `Whisker Min: ${summaryStats.minNonOutlier}`, x: xWhiskerLeft, y: centerY - boxHeight / 2 - 12, align: 'center' });
+            }
+            if (isModified && (summaryStats.maxNonOutlier !== summaryStats.max)) {
+                labels.push({ text: `Whisker Max: ${summaryStats.maxNonOutlier}`, x: xWhiskerRight, y: centerY - boxHeight / 2 - 12, align: 'center' });
+            }
+
+            // Stagger bottom labels to prevent collision if coordinates are close
+            labels.sort((a, b) => a.x - b.x);
+            let lastBottomX = -999;
+            let lastTopX = -999;
+
+            ctx.fillStyle = colors.colorText;
+            ctx.font = 'bold 12px system-ui';
+
+            labels.forEach((lbl) => {
+                ctx.textAlign = lbl.align;
+                let drawY = lbl.y;
+
+                if (lbl.y > centerY) { // Bottom row
+                    if (lbl.x - lastBottomX < 45) {
+                        drawY += 15; // Shift down to avoid overlap
+                    }
+                    lastBottomX = lbl.x;
+                } else { // Top row
+                    if (lbl.x - lastTopX < 45) {
+                        drawY -= 15; // Shift up to avoid overlap
+                    }
+                    lastTopX = lbl.x;
+                }
+
+                ctx.fillText(lbl.text, lbl.x, drawY);
+            });
+        }
+
+        function drawVerticalBoxplot(ctx, canvas, scaleMin, scaleMax, isModified, colors) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const margin = { left: 100, right: 100, top: 40, bottom: 50 };
+
+            const plotHeight = h - margin.top - margin.bottom;
+            const centerX = (w - margin.left - margin.right) / 2 + margin.left;
+            const boxWidth = 80;
+
+            const mapY = (val) => h - margin.bottom - ((val - scaleMin) / (scaleMax - scaleMin)) * plotHeight;
+
+            // Draw Axis & Ticks
+            const axisX = margin.left - 20;
+            ctx.strokeStyle = colors.colorText;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(axisX, margin.top);
+            ctx.lineTo(axisX, h - margin.bottom);
+            ctx.stroke();
+
+            // Ticks
+            const numTicks = 8;
+            ctx.font = '12px system-ui';
+            ctx.fillStyle = colors.colorText;
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= numTicks; i++) {
+                const tickVal = scaleMin + (i / numTicks) * (scaleMax - scaleMin);
+                const y = mapY(tickVal);
+                ctx.beginPath();
+                ctx.moveTo(axisX - 6, y);
+                ctx.lineTo(axisX, y);
+                ctx.stroke();
+                ctx.fillText(tickVal.toFixed(1), axisX - 10, y + 4);
+            }
+
+            // Map Key Positions
+            const yQ1 = mapY(summaryStats.q1);
+            const yMedian = mapY(summaryStats.median);
+            const yQ3 = mapY(summaryStats.q3);
+
+            const yWhiskerBottom = mapY(isModified ? summaryStats.minNonOutlier : summaryStats.min);
+            const yWhiskerTop = mapY(isModified ? summaryStats.maxNonOutlier : summaryStats.max);
+
+            // Draw Fences on Modified Boxplot
+            if (isModified) {
+                const yFenceLow = mapY(summaryStats.lowerFence);
+                const yFenceHigh = mapY(summaryStats.upperFence);
+
+                ctx.strokeStyle = colors.colorFence;
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+
+                // Lower Fence Line
+                ctx.beginPath();
+                ctx.moveTo(centerX - boxWidth / 1.3, yFenceLow);
+                ctx.lineTo(centerX + boxWidth / 1.3, yFenceLow);
+                ctx.stroke();
+
+                // Upper Fence Line
+                ctx.beginPath();
+                ctx.moveTo(centerX - boxWidth / 1.3, yFenceHigh);
+                ctx.lineTo(centerX + boxWidth / 1.3, yFenceHigh);
+                ctx.stroke();
+
+                ctx.setLineDash([]); // Reset dash
+
+                // Fence Text Labels
+                ctx.fillStyle = colors.colorFence;
+                ctx.font = 'bold 11px system-ui';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Lower Bound (${summaryStats.lowerFence})`, centerX + boxWidth / 1.3 + 8, yFenceLow + 4);
+                ctx.fillText(`Upper Bound (${summaryStats.upperFence})`, centerX + boxWidth / 1.3 + 8, yFenceHigh + 4);
+            }
+
+            // Draw Whiskers
+            ctx.strokeStyle = colors.colorPrimary;
+            ctx.lineWidth = 2;
+
+            // Bottom Whisker Line
+            ctx.beginPath();
+            ctx.moveTo(centerX, yWhiskerBottom);
+            ctx.lineTo(centerX, yQ1);
+            ctx.stroke();
+
+            // Top Whisker Line
+            ctx.beginPath();
+            ctx.moveTo(centerX, yQ3);
+            ctx.lineTo(centerX, yWhiskerTop);
+            ctx.stroke();
+
+            // Bottom Cap
+            ctx.beginPath();
+            ctx.moveTo(centerX - boxWidth / 4, yWhiskerBottom);
+            ctx.lineTo(centerX + boxWidth / 4, yWhiskerBottom);
+            ctx.stroke();
+
+            // Top Cap
+            ctx.beginPath();
+            ctx.moveTo(centerX - boxWidth / 4, yWhiskerTop);
+            ctx.lineTo(centerX + boxWidth / 4, yWhiskerTop);
+            ctx.stroke();
+
+            // Draw Box (Q1 to Q3)
+            ctx.fillStyle = colors.colorBoxBg;
+            ctx.fillRect(centerX - boxWidth / 2, yQ3, boxWidth, Math.max(1, yQ1 - yQ3));
+
+            ctx.strokeStyle = colors.colorPrimary;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(centerX - boxWidth / 2, yQ3, boxWidth, Math.max(1, yQ1 - yQ3));
+
+            // Draw Median Line (Q2)
+            ctx.strokeStyle = colors.colorPrimary;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(centerX - boxWidth / 2, yMedian);
+            ctx.lineTo(centerX + boxWidth / 2, yMedian);
+            ctx.stroke();
+
+            // Draw Outliers
+            if (isModified && summaryStats.outliers.length > 0) {
+                ctx.fillStyle = colors.colorOutlier;
+                ctx.strokeStyle = colors.colorText;
+                ctx.lineWidth = 1.5;
+                summaryStats.outliers.forEach(outVal => {
+                    const oy = mapY(outVal);
+                    ctx.beginPath();
+                    ctx.arc(centerX, oy, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+
+            // Annotate 5-Number Summary Values on Vertical Boxplot with anti-overlap positioning
+            const labels = [
+                { text: `Min: ${summaryStats.min}`, y: mapY(summaryStats.min), side: 'left' },
+                { text: `Q1: ${summaryStats.q1}`, y: yQ1, side: 'left' },
+                { text: `Med: ${summaryStats.median}`, y: yMedian, side: 'right' },
+                { text: `Q3: ${summaryStats.q3}`, y: yQ3, side: 'left' },
+                { text: `Max: ${summaryStats.max}`, y: mapY(summaryStats.max), side: 'left' }
+            ];
+
+            if (isModified && (summaryStats.minNonOutlier !== summaryStats.min)) {
+                labels.push({ text: `Whisker Min: ${summaryStats.minNonOutlier}`, y: yWhiskerBottom, side: 'right' });
+            }
+            if (isModified && (summaryStats.maxNonOutlier !== summaryStats.max)) {
+                labels.push({ text: `Whisker Max: ${summaryStats.maxNonOutlier}`, y: yWhiskerTop, side: 'right' });
+            }
+
+            labels.sort((a, b) => b.y - a.y);
+            let lastLeftY = 9999;
+            let lastRightY = 9999;
+
+            ctx.fillStyle = colors.colorText;
+            ctx.font = 'bold 12px system-ui';
+
+            labels.forEach((lbl) => {
+                let drawY = lbl.y;
+
+                if (lbl.side === 'left') {
+                    if (Math.abs(lastLeftY - lbl.y) < 18) {
+                        drawY = lastLeftY - 18;
+                    }
+                    ctx.textAlign = 'right';
+                    ctx.fillText(lbl.text, centerX - boxWidth / 2 - 10, drawY + 4);
+                    lastLeftY = drawY;
+                } else {
+                    if (Math.abs(lastRightY - lbl.y) < 18) {
+                        drawY = lastRightY - 18;
+                    }
+                    ctx.textAlign = 'left';
+                    ctx.fillText(lbl.text, centerX + boxWidth / 2 + 10, drawY + 4);
+                    lastRightY = drawY;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
